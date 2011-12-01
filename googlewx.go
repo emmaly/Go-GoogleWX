@@ -1,10 +1,9 @@
 package googlewx
 
 import (
-	"http"
-	"xml"
+	"encoding/xml"
 	"fmt"
-	"os"
+	"net/http"
 )
 
 type Data struct {
@@ -45,7 +44,7 @@ type Conditions struct {
 	Humidity  string
 }
 
-func Get(query string) (*Weather, os.Error) {
+func Get(query string) (*Weather, error) {
 	wx := new(Wx)
 	weather := new(Weather)
 	wxRes, err := http.Get(fmt.Sprintf("http://www.google.com/ig/api?weather=%s", query))
