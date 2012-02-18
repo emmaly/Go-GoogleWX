@@ -1,8 +1,8 @@
 package main
 
 import (
-	"googlewx"
 	"fmt"
+	"googlewx"
 	"os"
 )
 
@@ -18,6 +18,9 @@ func main() {
 
 	if err != nil {
 		fmt.Printf("ERROR: %v\n", err)
+		if wx != nil {
+			fmt.Printf("%v\n", wx)
+		}
 		os.Exit(1)
 	}
 

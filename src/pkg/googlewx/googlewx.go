@@ -3,28 +3,37 @@ package googlewx
 import (
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 )
 
-type Data struct {
-	Data string `xml:"attr"`
+type data struct {
+	Data string `xml:"data,attr"`
 }
 
-type Wx struct {
-	City     Data           `xml:"weather>forecast_information>city"`
-	Time     Data           `xml:"weather>forecast_information>current_date_time"`
-	Current  WxConditions   `xml:"weather>current_conditions"`
-	Forecast []WxConditions `xml:"weather>forecast_conditions"`
+type wx struct {
+	Weather weather `xml:"weather"`
 }
 
-type WxConditions struct {
-	Day_of_week    Data
-	Condition      Data
-	Temp_f         Data
-	Low            Data
-	High           Data
-	Wind_condition Data
-	Humidity       Data
+type weather struct {
+	Forecast_information forecastinformation `xml:"forecast_information"`
+	Current_conditions   wxConditions        `xml:"current_conditions"`
+	Forecast_conditions  []wxConditions      `xml:"forecast_conditions"`
+}
+
+type forecastinformation struct {
+	City data `xml:"city"`
+	Time data `xml:"current_date_time"`
+}
+
+type wxConditions struct {
+	Condition      data `xml:"condition"`
+	Day_of_week    data `xml:"day_of_week"`
+	Temp_f         data `xml:"temp_f"`
+	Low            data `xml:"low"`
+	High           data `xml:"high"`
+	Wind_condition data `xml:"wind_condition"`
+	Humidity       data `xml:"humidity"`
 }
 
 type Weather struct {
@@ -45,28 +54,34 @@ type Conditions struct {
 }
 
 func Get(query string) (*Weather, error) {
-	wx := new(Wx)
-	weather := new(Weather)
+	wxRoot := new(wx)
 	wxRes, err := http.Get(fmt.Sprintf("http://www.google.com/ig/api?weather=%s", query))
 	if err != nil {
-		return weather, err
+		return nil, err
 	}
-	xml.Unmarshal(wxRes.Body, wx)
+	body, err := ioutil.ReadAll(wxRes.Body)
+	if err != nil {
+		return nil, err
+	}
+	xml.Unmarshal(body, wxRoot)
+	wx := wxRoot.Weather
 
-	weather.City = wx.City.Data
-	weather.Time = wx.Time.Data
+	weather := new(Weather)
 
-	weather.Current.Condition = wx.Current.Condition.Data
-	weather.Current.Temp = wx.Current.Temp_f.Data
-	weather.Current.Wind = wx.Current.Wind_condition.Data
-	weather.Current.Humidity = wx.Current.Humidity.Data
+	weather.City = wx.Forecast_information.City.Data
+	weather.Time = wx.Forecast_information.Time.Data
 
-	weather.Forecast = make([]Conditions, len(wx.Forecast))
-	for i := range wx.Forecast {
-		weather.Forecast[i].Day = wx.Forecast[i].Day_of_week.Data
-		weather.Forecast[i].Low = wx.Forecast[i].Low.Data
-		weather.Forecast[i].High = wx.Forecast[i].High.Data
-		weather.Forecast[i].Condition = wx.Forecast[i].Condition.Data
+	weather.Current.Condition = wx.Current_conditions.Condition.Data
+	weather.Current.Temp = wx.Current_conditions.Temp_f.Data
+	weather.Current.Wind = wx.Current_conditions.Wind_condition.Data
+	weather.Current.Humidity = wx.Current_conditions.Humidity.Data
+
+	weather.Forecast = make([]Conditions, len(wx.Forecast_conditions))
+	for i := range wx.Forecast_conditions {
+		weather.Forecast[i].Day = wx.Forecast_conditions[i].Day_of_week.Data
+		weather.Forecast[i].Low = wx.Forecast_conditions[i].Low.Data
+		weather.Forecast[i].High = wx.Forecast_conditions[i].High.Data
+		weather.Forecast[i].Condition = wx.Forecast_conditions[i].Condition.Data
 	}
 
 	return weather, nil
