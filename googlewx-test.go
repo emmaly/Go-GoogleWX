@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"googlewx"
+	"github.com/dustywilson/Go-GoogleWX"
 	"os"
 )
 
